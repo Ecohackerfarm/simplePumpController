@@ -14,9 +14,9 @@ Description: the controller pumps water from a hot water tank #1 to
 #define TEMP_OK 2 // starts when T2 > T_tresh+hyst
 #define PUMPING 3 // starts when T2 < T_tresh-hyst
 
-#define HYST 0.005 // hysteresis, about +&- 2.5°C (total 5°C)
-#define VAL_0_DEG 0.42
-#define VAL_100_DEG 0.61
+#define HYST 6 // hysteresis, about +&- 2.5°C (total 5°C)
+#define VAL_0_DEG 430
+#define VAL_100_DEG 625
 
 const int sensor1Pin = A1; // temperature sensor from tank #1 ; connected on left side
 const int sensor2Pin = A2; // temperature sensor from tank #2 ; connected on right side
@@ -54,7 +54,7 @@ void setLed(int powerLed, int relaisLed, int tMaxLed)
 
 //-----------------------------------------------------------------
 // send to arduino serial console for debugging
-void sendValue(char* label, float value)
+void sendValue(const char* label, float value)
 {
   Serial.print(label);
   Serial.print(" :");
@@ -62,7 +62,7 @@ void sendValue(char* label, float value)
 }
 
 //-----------------------------------------------------------------
-int getState(float sensor1Val, float sensor2Val, float treshVal)
+int getState(uint16_t sensor1Val, uint16_t sensor2Val, uint16_t treshVal)
 {
   // state doesn't change if tresh-hyst < t2 < tresh+hyst
   if ((sensor1Val > VAL_100_DEG) || (sensor2Val > VAL_100_DEG) ||
@@ -102,24 +102,29 @@ void updateState(int state)
       break;
   }
 }
+
+static float real_temp(uint16_t input) {
+	return (input - VAL_0_DEG) * 100.f / (VAL_100_DEG - VAL_0_DEG);
+}
     
 //-----------------------------------------------------------------
 void loop(){
-  float sensor1Val = analogRead(sensor1Pin)/1024.0;
-  float sensor2Val = analogRead(sensor2Pin)/1024.0;  
-  float potentioVal = analogRead(potentioPin)/1024.0;  
+  uint16_t sensor1Val = analogRead(sensor1Pin);
+  uint16_t sensor2Val = analogRead(sensor2Pin); 
+  uint16_t potentioVal = analogRead(potentioPin);  
   
   // converts to the sensors scale
-  float treshVal = potentioVal*(VAL_100_DEG-VAL_0_DEG) + VAL_0_DEG; 
-  
-  sendValue("Sensor1",sensor1Val);
-  sendValue("Sensor2",sensor2Val);
-  sendValue("Treshold",treshVal);
+  uint16_t treshVal = potentioVal * (VAL_100_DEG - VAL_0_DEG) / 1024 + VAL_0_DEG;
+
+  sendValue("Sensor1", real_temp(sensor1Val));
+  sendValue("Sensor2", real_temp(sensor2Val));
+  sendValue("Treshold", real_temp(treshVal));
   
   int state = getState(sensor1Val, sensor2Val, treshVal);
-    
+
+  sendValue("state", state);
+
   updateState(state);
 
   delay(200);
-  
 }
