@@ -64,21 +64,19 @@ void sendValue(char* label, float value)
 //-----------------------------------------------------------------
 int getState(float sensor1Val, float sensor2Val, float treshVal)
 {
-  static int state = TEMP_OK;
-
   // state doesn't change if tresh-hyst < t2 < tresh+hyst
-  if((sensor1Val > VAL_100_DEG) || (sensor2Val > VAL_100_DEG) || 
-     (sensor1Val < VAL_0_DEG) || (sensor2Val < VAL_0_DEG))
-    state = NO_SENSOR;
-  else if(sensor1Val < treshVal-HYST)
-    state = TEMP_UNRCH;
-  else if(sensor2Val < (treshVal-HYST)) 
-    state = PUMPING;
-  else if(sensor2Val > (treshVal+HYST))
-    state = TEMP_OK;
-    
-  return state;
-}
+  if ((sensor1Val > VAL_100_DEG) || (sensor2Val > VAL_100_DEG) ||
+      (sensor1Val < VAL_0_DEG)   || (sensor2Val < VAL_0_DEG))
+    return NO_SENSOR;
+
+  if (sensor1Val < treshVal-HYST)
+    return TEMP_UNRCH;
+
+  if (sensor2Val < (treshVal-HYST))
+    return PUMPING;
+
+  return TEMP_OK;
+ }
 
 //-----------------------------------------------------------------
 void updateState(int state)
