@@ -32,14 +32,18 @@ static inline pump_state_t get_pump_state(pump_state_t state, uint16_t source_te
 	if (source_temp < dest_temp)
 		return STATE_TEMP_LOW;
 
+	if (dest_temp > target_temp + VAL_HYST)
+		return STATE_TEMP_OK;
+
 	if (source_temp < target_temp - VAL_HYST)
 		return STATE_TEMP_LOW;
 
 	if (source_temp > target_temp + VAL_HYST)
 		return STATE_PUMPING;
 
-	if (dest_temp > target_temp + VAL_HYST)
-		return STATE_TEMP_OK;
-
 	return state;
+}
+
+static inline pump_state_t get_pump_state_f(pump_state_t state, uint16_t source_temp, uint16_t target_temp, uint16_t dest_temp) {
+	return get_pump_state(state, sensor_temp(source_temp), sensor_temp(target_temp), sensor_temp(dest_temp));
 }
