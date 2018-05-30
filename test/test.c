@@ -3,7 +3,11 @@
 #include <munit/munit.h>
 #include "pump_control.h"
 
-static MunitResult test_temperature_conversion(const MunitParameter params[], void* user_data) {
+#define MUNIT_TESTCASE(name) MunitResult name(const MunitParameter params[], void* user_data)
+#define MUNIT_TEST(name) {#name, name, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL}
+#define MUNIT_TEST_END   {NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL}
+
+static MUNIT_TESTCASE(test_temperature_conversion) {
 	for (int i = VAL_0_DEG; i <= VAL_100_DEG; ++i)
 		munit_assert_int(i, ==, sensor_temp(real_temp(i)));
 
@@ -11,8 +15,8 @@ static MunitResult test_temperature_conversion(const MunitParameter params[], vo
 }
 
 static MunitTest test_suite_tests[] = {
-	{"test_temperature_conversion,", test_temperature_conversion, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL },
-	{NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL}
+	MUNIT_TEST(test_temperature_conversion),
+	MUNIT_TEST_END
 };
 
 static const MunitSuite test_suite = {
