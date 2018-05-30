@@ -14,19 +14,38 @@ static MUNIT_TESTCASE(test_temperature_conversion) {
 	return MUNIT_OK;
 }
 
-static MUNIT_TESTCASE(test_state_change) {
-	munit_assert_int(get_pump_state_f(STATE_TEMP_LOW, 60, 50, 30), ==, STATE_PUMPING);
+static MUNIT_TESTCASE(test_state_sensor_error) {
+	munit_assert_int(get_pump_state(STATE_TEMP_LOW, 0, 0, 0), ==, SENSOR_ERROR);
+
+	return MUNIT_OK;
+}
+
+static MUNIT_TESTCASE(test_state_change_temp_low) {
 	munit_assert_int(get_pump_state_f(STATE_TEMP_LOW, 40, 50, 30), ==, STATE_TEMP_LOW);
-	munit_assert_int(get_pump_state_f(STATE_PUMPING, 60, 50, 60), ==, STATE_TEMP_OK);
 	munit_assert_int(get_pump_state_f(STATE_PUMPING, 70, 80, 60), ==, STATE_TEMP_LOW);
+
+	return MUNIT_OK;
+}
+
+static MUNIT_TESTCASE(test_state_change_pumping) {
+	munit_assert_int(get_pump_state_f(STATE_TEMP_LOW, 60, 50, 30), ==, STATE_PUMPING);
 	munit_assert_int(get_pump_state_f(STATE_TEMP_OK, 70, 60, 60), ==, STATE_PUMPING);
+
+	return MUNIT_OK;
+}
+
+static MUNIT_TESTCASE(test_state_change_temp_ok) {
+	munit_assert_int(get_pump_state_f(STATE_PUMPING, 60, 50, 60), ==, STATE_TEMP_OK);
 
 	return MUNIT_OK;
 }
 
 static MunitTest test_suite_tests[] = {
 	MUNIT_TEST(test_temperature_conversion),
-	MUNIT_TEST(test_state_change),
+	MUNIT_TEST(test_state_sensor_error),
+	MUNIT_TEST(test_state_change_temp_low),
+	MUNIT_TEST(test_state_change_pumping),
+	MUNIT_TEST(test_state_change_temp_ok),
 	MUNIT_TEST_END
 };
 
