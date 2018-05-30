@@ -8,15 +8,7 @@ Description: the controller pumps water from a hot water tank #1 to
  an other tank #2 until the desired temperature is reached.
 ------------------------------------------------------------------*/
 
-
-#define NO_SENSOR 0 // at least one sensor is not connected
-#define TEMP_UNRCH 1 // starts when T1 < T_tresh (temperature unreachable)
-#define TEMP_OK 2 // starts when T2 > T_tresh+hyst
-#define PUMPING 3 // starts when T2 < T_tresh-hyst
-
-#define HYST 6 // hysteresis, about +&- 2.5°C (total 5°C)
-#define VAL_0_DEG 430
-#define VAL_100_DEG 625
+#include "pump_control.h"
 
 const int sensor1Pin = A1; // temperature sensor from tank #1 ; connected on left side
 const int sensor2Pin = A2; // temperature sensor from tank #2 ; connected on right side
@@ -62,56 +54,36 @@ void sendValue(const char* label, float value)
 }
 
 //-----------------------------------------------------------------
-int getState(uint16_t sensor1Val, uint16_t sensor2Val, uint16_t treshVal)
-{
-  // state doesn't change if tresh-hyst < t2 < tresh+hyst
-  if ((sensor1Val > VAL_100_DEG) || (sensor2Val > VAL_100_DEG) ||
-      (sensor1Val < VAL_0_DEG)   || (sensor2Val < VAL_0_DEG))
-    return NO_SENSOR;
-
-  if (sensor1Val < treshVal-HYST)
-    return TEMP_UNRCH;
-
-  if (sensor2Val < (treshVal-HYST))
-    return PUMPING;
-
-  return TEMP_OK;
- }
-
-//-----------------------------------------------------------------
-void updateState(int state)
+void updateState(pump_state_t state)
 {
   switch(state)
   {
-    case NO_SENSOR:
+    case SENSOR_ERROR:
       setLed(0,0,0);
       blinkPwrLed();
       digitalWrite(relaisPin, LOW);
       break;
-    case TEMP_UNRCH:
+    case STATE_TEMP_LOW:
       setLed(1,0,0);
       digitalWrite(relaisPin, LOW);
       break;
-    case PUMPING: 
+    case STATE_PUMPING:
       setLed(1,1,0);
       digitalWrite(relaisPin, HIGH);
       break;
-    case TEMP_OK:
+    case STATE_TEMP_OK:
       setLed(1,0,1);
       digitalWrite(relaisPin, LOW);
       break;
   }
 }
-
-static float real_temp(uint16_t input) {
-	return (input - VAL_0_DEG) * 100.f / (VAL_100_DEG - VAL_0_DEG);
-}
     
 //-----------------------------------------------------------------
 void loop(){
+  static pump_state_t state = STATE_TEMP_LOW;
   uint16_t sensor1Val = analogRead(sensor1Pin);
-  uint16_t sensor2Val = analogRead(sensor2Pin); 
-  uint16_t potentioVal = analogRead(potentioPin);  
+  uint16_t sensor2Val = analogRead(sensor2Pin);
+  uint16_t potentioVal = analogRead(potentioPin);
   
   // converts to the sensors scale
   uint16_t treshVal = potentioVal * (VAL_100_DEG - VAL_0_DEG) / 1024 + VAL_0_DEG;
@@ -120,7 +92,7 @@ void loop(){
   sendValue("Sensor2", real_temp(sensor2Val));
   sendValue("Treshold", real_temp(treshVal));
   
-  int state = getState(sensor1Val, sensor2Val, treshVal);
+  state = get_pump_state(state, sensor1Val, treshVal, sensor2Val);
 
   sendValue("state", state);
 
