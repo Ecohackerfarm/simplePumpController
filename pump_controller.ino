@@ -86,7 +86,7 @@ void loop(){
   uint16_t potentioVal = analogRead(potentioPin);
   
   // converts to the sensors scale
-  uint16_t treshVal = potentioVal * (VAL_100_DEG - VAL_0_DEG) / 1024 + VAL_0_DEG;
+  uint16_t treshVal = (int) potentioVal * (VAL_100_DEG - VAL_0_DEG) / 1024 + VAL_0_DEG;
 
   sendValue("Sensor1", real_temp(sensor1Val));
   sendValue("Sensor2", real_temp(sensor2Val));
