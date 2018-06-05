@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#define VAL_HYST	6	// Hysteresis
+#define VAL_HYST	10	// Hysteresis
 #define VAL_TEMP_LOSS	10	// Temperature lost on the way
 #define VAL_0_DEG	430
 #define VAL_100_DEG	625
@@ -30,7 +30,10 @@ static inline pump_state_t get_pump_state(pump_state_t state, uint16_t source_te
 	if (dest_temp < VAL_0_DEG || dest_temp > VAL_100_DEG)
 		return SENSOR_ERROR;
 
-	if (source_temp < dest_temp)
+	// account for transmission loss
+	source_temp -= VAL_TEMP_LOSS;
+
+	if (source_temp <= dest_temp)
 		return STATE_TEMP_LOW;
 
 	if (dest_temp > target_temp + VAL_HYST)
@@ -39,7 +42,7 @@ static inline pump_state_t get_pump_state(pump_state_t state, uint16_t source_te
 	if (source_temp < target_temp - VAL_HYST)
 		return STATE_TEMP_LOW;
 
-	if (source_temp > target_temp + VAL_HYST + VAL_TEMP_LOSS)
+	if (source_temp > target_temp + VAL_HYST)
 		return STATE_PUMPING;
 
 	return state;
