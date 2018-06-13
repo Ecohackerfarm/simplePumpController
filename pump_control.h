@@ -8,8 +8,7 @@
 typedef enum {
 	SENSOR_ERROR,
 	STATE_TEMP_LOW,
-	STATE_PUMPING,
-	STATE_TEMP_OK
+	STATE_PUMPING
 } pump_state_t;
 
 static inline float real_temp(uint16_t input) {
@@ -30,19 +29,17 @@ static inline pump_state_t get_pump_state(pump_state_t state, uint16_t source_te
 	if (dest_temp < VAL_0_DEG || dest_temp > VAL_100_DEG)
 		return SENSOR_ERROR;
 
-	// account for transmission loss
-	source_temp -= VAL_TEMP_LOSS;
-
-	if (source_temp <= dest_temp)
+	// pump until the destination is as hot as the source
+	if (source_temp <= dest_temp + VAL_TEMP_LOSS)
 		return STATE_TEMP_LOW;
 
-	if (dest_temp > target_temp + VAL_HYST)
-		return STATE_TEMP_OK;
-
+	// pump unitl the source temp dropped below the desired temperature
 	if (source_temp < target_temp - VAL_HYST)
 		return STATE_TEMP_LOW;
 
-	if (source_temp > target_temp + VAL_HYST)
+	// start pumping if source temp has reached the desired temperature
+	// and is higher than the destination temperature
+	if (source_temp > target_temp + VAL_HYST && source_temp > dest_temp + VAL_TEMP_LOSS)
 		return STATE_PUMPING;
 
 	return state;

@@ -71,10 +71,6 @@ void updateState(pump_state_t state)
       setLed(1,1,0);
       digitalWrite(relaisPin, HIGH);
       break;
-    case STATE_TEMP_OK:
-      setLed(1,0,1);
-      digitalWrite(relaisPin, LOW);
-      break;
   }
 }
     

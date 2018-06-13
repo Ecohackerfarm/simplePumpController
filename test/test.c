@@ -7,6 +7,12 @@
 #define MUNIT_TEST(name) {#name, name, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL}
 #define MUNIT_TEST_END   {NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL}
 
+#define PUMP_TEST_RAW(state, src, target, dest, expected) \
+	munit_assert_int(get_pump_state(state, src, target, dest), ==, expected)
+
+#define PUMP_TEST(state, src, target, dest, expected) \
+	munit_assert_int(get_pump_state_f(state, src, target, dest), ==, expected)
+
 static MUNIT_TESTCASE(test_temperature_conversion) {
 	for (int i = VAL_0_DEG; i <= VAL_100_DEG; ++i)
 		munit_assert_int(i, ==, sensor_temp(real_temp(i)));
@@ -15,41 +21,38 @@ static MUNIT_TESTCASE(test_temperature_conversion) {
 }
 
 static MUNIT_TESTCASE(test_state_sensor_error) {
-	munit_assert_int(get_pump_state(STATE_TEMP_LOW, 0, 0, 0), ==, SENSOR_ERROR);
-	munit_assert_int(get_pump_state(STATE_TEMP_LOW, 0xffff, 0xffff, 0xffff), ==, SENSOR_ERROR);
+	PUMP_TEST_RAW(STATE_TEMP_LOW, 0, 0, 0, SENSOR_ERROR);
+	PUMP_TEST_RAW(STATE_TEMP_LOW, 0xffff, 0xffff, 0xffff, SENSOR_ERROR);
+
+	PUMP_TEST_RAW(STATE_PUMPING, 0, 0, 0, SENSOR_ERROR);
+	PUMP_TEST_RAW(STATE_PUMPING, 0xffff, 0xffff, 0xffff, SENSOR_ERROR);
 
 	return MUNIT_OK;
 }
 
 static MUNIT_TESTCASE(test_state_change_temp_low) {
-	munit_assert_int(get_pump_state_f(STATE_TEMP_LOW, 40, 50, 30), ==, STATE_TEMP_LOW);
 
-	munit_assert_int(get_pump_state_f(STATE_PUMPING, 70, 80, 60), ==, STATE_TEMP_LOW);
-	munit_assert_int(get_pump_state_f(STATE_TEMP_LOW, 70, 80, 60), ==, STATE_TEMP_LOW);
+	PUMP_TEST(STATE_TEMP_LOW, 40, 50, 20, STATE_TEMP_LOW);
 
-	munit_assert_int(get_pump_state_f(STATE_TEMP_OK, 55, 60, 60), ==, STATE_TEMP_LOW);
-	munit_assert_int(get_pump_state_f(STATE_TEMP_LOW, 55, 60, 60), ==, STATE_TEMP_LOW);
+	PUMP_TEST(STATE_PUMPING, 60, 50, 55, STATE_TEMP_LOW);
+
+	PUMP_TEST(STATE_PUMPING, 50, 50, 50, STATE_TEMP_LOW);
+
+	PUMP_TEST(STATE_PUMPING, 45, 50, 40, STATE_TEMP_LOW);
+	PUMP_TEST(STATE_TEMP_LOW, 45, 50, 40, STATE_TEMP_LOW);
+	PUMP_TEST(STATE_TEMP_LOW, 46, 50, 40, STATE_TEMP_LOW);
+	PUMP_TEST(STATE_TEMP_LOW, 55, 50, 40, STATE_TEMP_LOW);
 
 	return MUNIT_OK;
 }
 
 static MUNIT_TESTCASE(test_state_change_pumping) {
-	munit_assert_int(get_pump_state_f(STATE_TEMP_LOW, 62, 50, 30), ==, STATE_PUMPING);
-	munit_assert_int(get_pump_state_f(STATE_PUMPING, 62, 50, 30), ==, STATE_PUMPING);
 
-	munit_assert_int(get_pump_state_f(STATE_TEMP_OK, 75, 60, 60), ==, STATE_PUMPING);
-	munit_assert_int(get_pump_state_f(STATE_PUMPING, 75, 60, 60), ==, STATE_PUMPING);
+	PUMP_TEST(STATE_TEMP_LOW, 56, 50, 40, STATE_PUMPING);
+	PUMP_TEST(STATE_PUMPING, 56, 50, 40, STATE_PUMPING);
+	PUMP_TEST(STATE_PUMPING, 50, 50, 40, STATE_PUMPING);
 
-	munit_assert_int(get_pump_state_f(STATE_PUMPING, 65, 60, 59), ==, STATE_PUMPING);
-
-	return MUNIT_OK;
-}
-
-static MUNIT_TESTCASE(test_state_change_temp_ok) {
-	munit_assert_int(get_pump_state_f(STATE_PUMPING, 60, 50, 56), ==, STATE_TEMP_LOW); // XXX
-	munit_assert_int(get_pump_state_f(STATE_TEMP_OK, 60, 50, 55), ==, STATE_TEMP_LOW); // XXX
-
-	munit_assert_int(get_pump_state_f(STATE_TEMP_OK, 60, 50, 50), ==, STATE_TEMP_OK);
+	PUMP_TEST(STATE_PUMPING, 60, 50, 54, STATE_PUMPING);
 
 	return MUNIT_OK;
 }
@@ -59,7 +62,6 @@ static MunitTest test_suite_tests[] = {
 	MUNIT_TEST(test_state_sensor_error),
 	MUNIT_TEST(test_state_change_temp_low),
 	MUNIT_TEST(test_state_change_pumping),
-	MUNIT_TEST(test_state_change_temp_ok),
 	MUNIT_TEST_END
 };
 
