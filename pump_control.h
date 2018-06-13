@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+// values are sensor values
 #define VAL_HYST	10	// Hysteresis
 #define VAL_TEMP_LOSS	10	// Temperature lost on the way
 #define VAL_0_DEG	430
@@ -11,14 +12,17 @@ typedef enum {
 	STATE_PUMPING
 } pump_state_t;
 
+// helper function to convert sensor value to temperature in °C
 static inline float real_temp(uint16_t input) {
         return (input - VAL_0_DEG) * 100.f / (VAL_100_DEG - VAL_0_DEG);
 }
 
+// helper function to convert temperature in °C to sensor value
 static inline uint16_t sensor_temp(float temp) {
 	return temp * (VAL_100_DEG - VAL_0_DEG) / 100.f + VAL_0_DEG;
 }
 
+// get new state based on previous state and sensor readings
 static inline pump_state_t get_pump_state(pump_state_t state, uint16_t source_temp, uint16_t target_temp, uint16_t dest_temp) {
 	if (source_temp < VAL_0_DEG || source_temp > VAL_100_DEG)
 		return SENSOR_ERROR;
@@ -45,6 +49,7 @@ static inline pump_state_t get_pump_state(pump_state_t state, uint16_t source_te
 	return state;
 }
 
+// helper function to make writing tetscases easier
 static inline pump_state_t get_pump_state_f(pump_state_t state, uint16_t source_temp, uint16_t target_temp, uint16_t dest_temp) {
 	return get_pump_state(state, sensor_temp(source_temp), sensor_temp(target_temp), sensor_temp(dest_temp));
 }
